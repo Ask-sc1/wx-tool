@@ -1,212 +1,319 @@
 <p align="center">
-	<a href="https://wx.xxccss.com/"><img src="image/logo.png" width="45%"></a>
+  <a href="https://github.com/Ask-sc1/wx-tool">
+    <img src="image/logo.png" alt="wx-tool" width="45%">
+  </a>
+</p>
+
+<h1 align="center">wx-tool</h1>
+
+<p align="center">
+  Windows 微信 4.x 本地聊天记录备份与管理工具
 </p>
 
 <p align="center">
-	<strong>🍬Java版微信聊天记录备份与管理工具</strong>
+  <a href="https://github.com/Ask-sc1/wx-tool">
+    <img src="https://img.shields.io/github/stars/Ask-sc1/wx-tool?style=flat-square" alt="GitHub Stars">
+  </a>
+  <a href="https://github.com/Ask-sc1/wx-tool/fork">
+    <img src="https://img.shields.io/github/forks/Ask-sc1/wx-tool?style=flat-square" alt="GitHub Forks">
+  </a>
+  <a href="https://github.com/Ask-sc1/wx-tool/issues">
+    <img src="https://img.shields.io/github/issues/Ask-sc1/wx-tool?style=flat-square" alt="GitHub Issues">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/Ask-sc1/wx-tool?style=flat-square" alt="License">
+  </a>
 </p>
 
-<p align="center">
-	👉 <a href="https://wx.xxccss.com/">https://wx.xxccss.com/</a> 👈
-</p>
+## 简介
 
-<p align="center">
-	<a href="https://hellogithub.com/repository/5055dcceee434dc5851ac9897cb27396" target="_blank"><img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=5055dcceee434dc5851ac9897cb27396&claim_uid=AVv4KeNnZs2Ig3a" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-</p>
+`wx-tool` 是一个运行在 Windows 上的微信本地数据备份与浏览工具。它会读取本机已经登录的桌面微信数据，在本地完成数据库解密，并提供会话、联系人、群聊、消息、朋友圈、统计和导出等功能。
 
-## 微信 4.x / JDK 11 兼容版本
+本项目当前重点支持 **微信 4.x**，已使用 Windows 微信 `4.1.15.56` 进行实际验证。
 
-- 已适配 Windows 微信 `4.1.15.56`（`Weixin.exe` / `Weixin.dll` / `xwechat_files`）。
-- 支持微信 4.1.11+ 的 WCDB `Config.Cipher` XOR 掩码密钥提取，所有候选密钥都会通过 SQLCipher 4 page-1 HMAC 校验。
-- 解密流程仅读取微信原始文件，结果写入项目的 `data/db/<wxid>/`，不会修改微信数据库。
-- 支持 SQLCipher 4 页面解密及 `-wal` 增量补丁，并已切换联系人、会话、群聊、消息和朋友圈的 4.x 表结构。
-- 后端固定使用 JDK 11：推荐的最近补丁版本为 Microsoft OpenJDK `11.0.30`。Maven 构建使用 Spring Boot `2.7.18`（Spring Boot 3.x 要求 Java 17，不适用于本项目）。
+> 本项目只应处理本人账号或已获得明确授权的数据。请勿将导出的聊天记录、联系人、图片或数据库密钥提供给他人。
 
-PowerShell 中可这样设置当前终端环境：
+## 功能
+
+- 读取当前登录微信的账号、昵称、头像和本地数据目录。
+- 解密微信 4.x 使用的 SQLCipher 4 数据库。
+- 自动读取当前微信周期的 WAL 增量数据。
+- 浏览会话、联系人、普通群聊和企业微信群聊。
+- 浏览单聊与群聊消息，支持跨多个 `message_N.db` 合并。
+- 查看群公告、群成员和群聊详情。
+- 浏览朋友圈和最近搜索关键字。
+- 展示联系人、群聊、今日收发消息、近 15 天趋势、消息类型分布和互动联系人。
+- 导出联系人、群聊、聊天记录和找回联系人数据。
+- 通过微信本地全文索引查找已失效或已删除的联系人记录。
+
+## 兼容性
+
+| 项目 | 当前状态 |
+| --- | --- |
+| Windows 10 / 11 | 支持 |
+| 微信 4.1.15.56 | 已实际验证 |
+| 微信 4.1.11+ 密钥格式 | 支持 `Config.Cipher` XOR 掩码提取 |
+| 微信 3.x | 保留旧版偏移量解析路径，最高验证到 `3.9.12.51` |
+| JDK | 必须使用 JDK 11 |
+| macOS / Linux | 不支持，工具依赖 Windows 进程和内存接口 |
+
+微信升级后可能改变进程结构、内存布局、数据库结构或 XOR 掩码。遇到新版微信无法识别时，请先提交包含微信版本号和错误信息的 Issue。
+
+## 工作原理
+
+1. 定位 `Weixin.exe` 主进程和当前账号的 `xwechat_files` 目录。
+2. 从微信 4.1.11+ 的 WCDB `Config.Cipher` 对象读取经过 XOR 掩码的数据库密钥。
+3. 使用每个数据库第 1 页的 salt、HMAC-SHA512 和第 1 页数据校验候选密钥。
+4. 按 SQLCipher 4 的 `AES-256-CBC / page 4096 / reserve 80` 参数解密数据库。
+5. 将当前 WAL 周期的已提交页面写入解密副本。
+6. 仅从项目的 `data/db/<wxid>/` 目录读取和展示数据。
+
+微信原始数据不会被修改。解密副本、导出文件和个人配置均已加入 `.gitignore`，不会提交到 Git 仓库。
+
+## 环境要求
+
+- Windows 10 或 Windows 11，64 位
+- JDK 11，推荐最新版 Microsoft OpenJDK 11 或 Eclipse Temurin 11
+- Node.js 18+
+- Maven 3.9+
+- 已在桌面微信中登录当前账号
+
+JDK 11 下载：[Eclipse Temurin 11](https://adoptium.net/temurin/releases/?version=11)
+
+Node.js 下载：[Node.js 官方网站](https://nodejs.org/)
+
+Maven 下载：[Apache Maven](https://maven.apache.org/download.cgi)
+
+微信下载：[微信 Windows 版](https://pc.weixin.qq.com/)
+
+## 设置 JDK 11
+
+请先确认 `java` 和 Maven 都使用 JDK 11：
 
 ```powershell
-$env:JAVA_HOME = "C:\Users\<用户名>\.jdks\ms-11.0.30"
+$env:JAVA_HOME = "C:\path\to\jdk-11"
 $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 java -version
-mvn clean package
+mvn -version
 ```
 
-<p align="center">
-	<a href="https://github.com/xuchengsheng/spring-reading/stargazers"><img src="https://img.shields.io/github/stars/xuchengsheng/wx-dump-4j?logo=github&logoColor=%23EF2D5E&label=Stars&labelColor=%23000000&color=%23EF2D5E&cacheSeconds=3600" alt="Stars Badge"/></a>
-    <a href="https://github.com/xuchengsheng"><img src="https://img.shields.io/github/followers/xuchengsheng?label=Followers&logo=github&logoColor=%23FC521F&labelColor=%231A2477&color=%23FC521F&cacheSeconds=3600" alt="Follow Badge"></a>
-    <a href="https://github.com/xuchengsheng/wx-dump-4j/fork"><img src="https://img.shields.io/github/forks/xuchengsheng/wx-dump-4j?label=Forks&logo=github&logoColor=%23F2BB13&labelColor=%23BE2323&color=%23F2BB13" alt="Fork Badge"></a>
-    <a href="https://github.com/xuchengsheng/wx-dump-4j/watchers"><img src="https://img.shields.io/github/watchers/xuchengsheng/wx-dump-4j?label=Watchers&logo=github&logoColor=%23FF4655&labelColor=%234169E1&color=%23FF4655&cacheSeconds=3600" alt="Watchers Badge"></a> 
-</p>
+Windows 用户环境变量中应设置：
 
-<p align="center">
-	<img src="https://img.shields.io/badge/Java-11%2B-%23437291?logo=openjdk&logoColor=%23437291"/>
-    <img src="https://img.shields.io/badge/Spring-5.3.10-%23437291?logo=Spring&logoColor=%236DB33F&color=%236DB33F"/>
-    <img src="https://img.shields.io/badge/SpringBoot-2.5.5-%23437291?logo=SpringBoot&logoColor=%236DB33F&color=%236DB33F"/>
-    <img src="https://img.shields.io/badge/JNA-5.8.0-%23437291?logo=JNA&logoColor=%23228B22&color=%23228B22"/>
-    <img src="https://img.shields.io/badge/Hutool-5.8.16-%23437291?logo=JNA&logoColor=%23F08080&color=%23F08080"/>
-    <img src="https://img.shields.io/badge/easyexcel-5.8.16-%23437291?logo=JNA&logoColor=%23D2691E&color=%23D2691E"/>
-    <img src="https://img.shields.io/badge/protobuf-3.25.1-%23437291?logo=JNA&logoColor=%23800080&color=%23800080"/>
-    <img src="https://img.shields.io/badge/mapstruct-1.4.2-%23437291?logo=JNA&logoColor=%23DC143C&color=%23DC143C"/>
-    <img src="https://img.shields.io/badge/druid-1.2.20-%23437291?logo=JNA&logoColor=%23C71585&color=%23C71585"/>
-    <img src="https://img.shields.io/badge/mybatisPlus-3.5.4.1-%23437291?logo=JNA&logoColor=%234B0082&color=%234B0082"/>
-    <img src="https://img.shields.io/badge/sqlite-3.34.0-%23437291?logo=JNA&logoColor=%230000CD&color=%230000CD"/>
-    <img src="https://img.shields.io/badge/lombok-1.18.20-%23437291?logo=JNA&logoColor=%23008B8B&color=%23008B8B"/>
-</p>
+```text
+JAVA_HOME=C:\path\to\jdk-11
+```
 
--------------------------------------------------------------------------------
+如果 IntelliJ IDEA 中仍显示 Java 23 或其他版本，请在以下位置改成 JDK 11：
 
-## 📚 简介
+```text
+File -> Project Structure -> Project -> SDK
+File -> Project Structure -> Project -> Language level = 11
+Settings -> Build, Execution, Deployment -> Build Tools -> Maven -> Runner -> JRE = JDK 11
+```
 
-wx-dump-4j是一款基于Java开发的微信数据分析工具。它准确显示好友数、群聊数和当日消息总量，提供过去15天每日消息统计，了解社交活跃度。识别展示最近一个月内互动频繁的前10位联系人。支持导出聊天记录、联系人、群聊信息，及查看**超过三天限制的朋友圈**历史记录和**找回微信好友**。
+## 从源码运行
 
-## 💡 主要功能
+### 1. 克隆仓库
 
-- 👤 **获取用户信息**：获取当前登录微信的详细信息，包括昵称、账号、手机号、邮箱、秘钥、微信Id。
-- 💬 **支持多种消息类型**：管理微信聊天对话中的文本、引用、图片、表情、卡片链接、系统消息等。
-- 📊 **综合管理**：提供微信会话、联系人、群聊与朋友圈的全面管理功能。
-- 📥 **记录导出**：支持导出微信聊天记录、联系人、已删除好友和群聊信息，便于备份和管理。
-- 📅 **查看历史朋友圈**：突破三日限制，查看更久以前的朋友圈历史记录，方便回顾和管理。
-- 📈 **微信统计功能**：展示微信好友数、群聊数及今日收发消息总量，了解社交活跃度。
-- 📊 **消息统计**：统计过去15天内每日微信消息数量，掌握长期消息交流情况。
-- 🔝 **互动联系人**：展示最近一个月互动最频繁的前10位联系人，了解重要社交联系。
-- 🧩 **消息类别占比**：展示微信消息类别占比图表，分析不同类型消息的占比情况。
-- ☁️ **关键字词云**：展示微信最近使用的关键字词云图，分析聊天内容重点。
-- 🔄 **找回已删除好友**：支持找回已删除的微信好友，恢复重要联系人。
-- 🖥️ **微信多开支持**：支持微信多开功能，方便管理多个账号，提高效率。
+```powershell
+git clone https://github.com/Ask-sc1/wx-tool.git
+cd wx-tool
+```
 
-## 🚀 快速启动
+### 2. 构建后端
 
-本指南将帮助您快速启动并运行项目，无论是安装包部署还是本地部署。
+```powershell
+mvn clean package -DskipTests
+```
 
-### 环境准备
+### 3. 构建前端
 
-在开始之前，请确保您的开发环境满足以下要求：
+```powershell
+cd wx-dump-ui
+npm ci
+npm run build
+cd ..
+```
 
-- 安装 [Java](https://repo.huaweicloud.com/java/jdk/11.0.2+9/jdk-11.0.2_windows-x64_bin.exe)，版本为 JDK 11+。
-- 安装 [Node.js](https://nodejs.org/en/)，版本为 18+。
-- 安装 [Maven](https://maven.apache.org/download.cgi)，版本为 3.5.0+。
-- 选择一款开发工具，比如 IntelliJ IDEA。
+### 4. 启动完整应用
 
-### 二进制部署
+```powershell
+java -jar wx-dump-admin/target/wx-dump-admin.jar
+```
 
-- 点击下载最新版 [wx-dump-4j-bin.tar.gz](https://github.com/xuchengsheng/wx-dump-4j/releases/download/v1.1.0/wx-dump-4j-bin.tar.gz)。
+访问 [http://localhost:8080](http://localhost:8080)。
 
-- 解压缩 `wx-dump-4j-bin.tar.gz` 文件，并进入 `bin` 目录。
+### 前端开发模式
 
-- 双击 `start.bat` 启动文件。
+后端运行在 `8080` 端口时，可以单独启动前端开发服务器：
 
-- 启动成功后，在浏览器中访问 [http://localhost:8080](http://localhost:8080) 以查看应用。
+```powershell
+cd wx-dump-ui
+npm run start
+```
 
-### 本地部署
+开发页面地址：[http://localhost:8000](http://localhost:8000)
 
-- 下载源码：
-   ```bash
-   $ git clone https://github.com/xuchengsheng/wx-dump-4j.git
-   ```
-- 安装后端依赖：
-   ```bash
-   $ cd wx-dump-4j mvn clean install
-   ```
-- 使用开发工具（如 IntelliJ IDEA）启动 com.xcs.wx.WxDumpApplication。
-- 安装前端依赖：
-   ```bash
-   $ cd wx-dump-ui npm install
-   ```
-- 启动前端服务：
-   ```bash
-   $ npm run start
-   ```
-- 前端服务启动成功后，在浏览器中访问 http://localhost:8000 以查看应用。
+## 生成发布包
 
-## ⚡ 技术栈
-以下是本项目使用的技术栈：
+先确保 `wx-dump-ui/dist` 已构建，然后执行：
 
-| 技术         | 描述                      | 版本      |
-|--------------|---------------------------|-----------|
-| Spring Boot  | Web 和 Thymeleaf 框架     | 2.7.15    |
-| SQLite       | 轻量级数据库              | 3.34.0    |
-| Lombok       | 简化 Java 代码            | 1.18.20   |
-| MyBatis Plus | ORM 框架扩展              | 3.5.4.1   |
-| Dynamic Datasource | 动态数据源管理         | 4.2.0     |
-| Druid        | 数据库连接池              | 1.2.20    |
-| MapStruct    | Java Bean 映射工具        | 1.4.2.Final |
-| Hutool       | Java 工具库               | 5.8.16    |
-| JNA          | Java 本地访问             | 5.8.0     |
-| Protobuf     | 序列化框架                | 3.25.1    |
-| gRPC         | RPC 框架                  | 1.11.0    |
-| EasyExcel    | Excel 操作工具            | 3.3.3     |
-| Commons Compress | 压缩和解压缩工具    | 1.19      |
-| Jackson Dataformat XML | XML 解析工具  | 2.13.5    |
-| Commons Lang3 | 常用工具类库             | 3.12.0    |
+```powershell
+mvn clean package -Prelease
+```
 
-## ⛔️️ 使用限制
-本软件仅适用于Windows操作系统。我们目前不支持macOS、Linux或其他操作系统。如果你在尝试在非Windows系统上运行本软件时可能遇到兼容性问题，这些问题可能导致软件无法正常运行或产生其他意外后果。
+发布包生成位置：
 
-| 操作系统 | 支持情况     |
-|:--------:|:----------:|
-| Windows  | 支持   |
-| macOS    | 不支持     |
-| Linux    | 不支持    |
+```text
+wx-dump-dist/target/wx-dump-4j-bin.tar.gz
+```
 
-## ⚠️免责声明
+解压后进入 `bin` 目录，双击 `start.bat`。启动脚本会优先使用 `JAVA_HOME`，并在检测到非 JDK 11 环境时停止启动。
 
-本软件仅供技术研究和教育目的使用，旨在解密用户个人微信聊天记录。严禁将本软件用于任何非法目的，包括但不限于侵犯隐私权或非授权数据访问。作为软件开发者，我不对因使用或滥用本软件产生的任何形式的损失或损害承担责任。
+## 使用流程
 
-## ⛵欢迎贡献！
+1. 打开并登录 Windows 桌面微信。
+2. 保持微信处于登录状态。
+3. 启动 `wx-tool` 并访问 [http://localhost:8080](http://localhost:8080)。
+4. 进入“解密工具”页面。
+5. 点击“解密”，等待数据库处理完成。
+6. 刷新页面，进入会话、联系人、群聊、消息或朋友圈页面。
 
-如果你发现任何错误🔍或者有改进建议🛠️，欢迎提交 issue 或者 pull request。你的反馈📢对于我非常宝贵💎！
+本项目不提供微信扫码登录功能。它读取的是桌面微信中已经登录的账号。
 
-## 💻我的 GitHub 统计
+## 常见问题
 
-[![Star History Chart](https://api.star-history.com/svg?repos=xuchengsheng/wx-dump-4j&type=Date)](https://star-history.com/#xuchengsheng/wx-dump-4j&Date)
+### 页面显示“微信数据库未就绪”
 
-## 🎉Stargazers
+先进入“解密工具”页面完成一次解密。若仍失败，请确认：
 
-[![Stargazers123 repo roster for @xuchengsheng/wx-dump-4j](https://reporoster.com/stars/xuchengsheng/wx-dump-4j)](https://github.com/xuchengsheng/wx-dump-4j/stargazers)
+- 桌面微信已经登录。
+- 微信账号与所选数据目录一致。
+- 当前微信进程名为 `Weixin.exe`。
+- 后端能够读取微信进程内存。
 
-## 🎉Forkers
+### 提示当前微信版本不支持
 
-[![Forkers repo roster for @xuchengsheng/wx-dump-4j](https://reporoster.com/forks/xuchengsheng/wx-dump-4j)](https://github.com/xuchengsheng/wx-dump-4j/network/members)
+请记录 `Weixin.exe` 的文件版本号并提交 Issue。微信更新后可能需要重新适配：
 
-## 🍱请我吃盒饭？
+- 进程名与 DLL 名称
+- `Config.Cipher` 内存结构
+- XOR 掩码
+- 数据表结构
+- 媒体文件格式
 
-作者晚上还要写博客✍️,平时还需要工作💼,如果帮到了你可以请作者吃个盒饭🥡
-<div>
-<img alt="logo" src="image/WeChatPay.png" style="width: 240px;height: 260px">
-<img alt="logo" src="image/Alipay.png" style="width: 240px;height: 260px">
-</div>
+### Maven 构建出现 Lombok 或 getter/setter 错误
 
-## ⭐️扫码关注微信公众号
+通常表示当前 Maven 没有使用 JDK 11。执行：
 
-关注后，回复关键字📲 **加群**📲，即可加入我们的技术交流群，与更多开发者一起交流学习。
+```powershell
+mvn -version
+```
 
-在此，我们真诚地邀请您访问我们的GitHub项目页面，如果您觉得***wx-dump-4j***对您有帮助，请顺手点个⭐️**Star**⭐️！每一颗星星都是我们前进的动力，是对我们努力的最大肯定。非常感谢您的支持！
+确认输出中的 Java version 为 `11.x`。
 
-<div>
-<img alt="logo" src="image/wechat-mp.png" height="180px">>
-</div>
+### 端口被占用
 
-## 👀 演示图
+默认端口为 `8080`。如果端口已被占用，可以指定其他端口：
 
-<table>
-    <tr>
-        <td><img src="image/screenshot/dashboard.png"/></td>
-        <td><img src="image/screenshot/session.png"/></td>
-    </tr>
-    <tr>
-        <td><img src="image/screenshot/contact.png"/></td>
-        <td><img src="image/screenshot/recover-contact.png"/></td>
-    </tr>
-    <tr>
-        <td><img src="image/screenshot/feeds.png"/></td>
-        <td><img src="image/screenshot/chat.png"/></td>
-    </tr>
-	<tr>
-        <td><img src="image/screenshot/chatroom.png"/></td>
-        <td><img src="image/screenshot/chatroom-detail.png"/></td>
-    </tr>	 
-	<tr>
-        <td><img src="image/screenshot/database.png"/></td>
-        <td><img src="image/screenshot/database-list.png"/></td>
-    </tr>
-</table>
+```powershell
+java -jar wx-dump-admin/target/wx-dump-admin.jar --server.port=8081
+```
+
+## 数据安全
+
+- 解密仅在本机进行，不上传微信数据库。
+- 解密结果位于 `data/db/<wxid>/`。
+- 导出文件位于 `data/export/`。
+- `data/` 已被 `.gitignore` 排除。
+- 数据库密钥不会写入 Git 仓库。
+- 不再使用程序时，请删除 `data/` 中的解密副本和导出文件。
+
+## 已知限制
+
+- 微信 4.x 使用 V2 媒体加密，部分图片、视频和语音可能无法直接显示或导出。
+- 微信升级后，固定 XOR 掩码或内部内存结构可能失效。
+- 群聊中部分已退出成员的显示名可能只能显示 wxid。
+- 本项目不会绕过微信登录流程，也不支持远程登录他人账号。
+
+## 项目结构
+
+```text
+wx-dump-admin/   Spring Boot 后端、微信进程读取和数据库解密
+wx-dump-ui/      Umi + React + Ant Design Pro 前端
+wx-dump-dist/    发布包组装配置
+docs/            解密和展示说明
+image/           README 图片与界面截图
+```
+
+## 主要技术版本
+
+| 技术 | 版本 |
+| --- | --- |
+| JDK | 11 |
+| Spring Boot | 2.7.18 |
+| SQLite JDBC | 3.50.3.0 |
+| Lombok | 1.18.38 |
+| MyBatis-Plus | 3.5.7 |
+| Dynamic Datasource | 4.3.1 |
+| Druid | 1.2.25 |
+| JNA | 5.17.0 |
+| Hutool | 5.8.36 |
+| MapStruct | 1.6.3 |
+| Apache Commons Compress | 1.27.1 |
+| Zstd JNI | 1.5.7-4 |
+| React | 18.2 |
+| Ant Design | 5.2 |
+| Umi | 4.x |
+
+## 界面截图
+
+### 仪表盘
+
+![仪表盘](image/screenshot/dashboard.png)
+
+### 会话
+
+![会话](image/screenshot/session.png)
+
+### 联系人
+
+![联系人](image/screenshot/contact.png)
+
+### 聊天记录
+
+![聊天记录](image/screenshot/chat.png)
+
+### 群聊
+
+![群聊](image/screenshot/chatroom.png)
+
+### 朋友圈
+
+![朋友圈](image/screenshot/feeds.png)
+
+### 数据库解密
+
+![数据库解密](image/screenshot/database.png)
+
+## 参与贡献
+
+欢迎提交 Issue 或 Pull Request：
+
+- [提交 Issue](https://github.com/Ask-sc1/wx-tool/issues)
+- [Fork 仓库](https://github.com/Ask-sc1/wx-tool/fork)
+- [查看 Pull Requests](https://github.com/Ask-sc1/wx-tool/pulls)
+
+提交问题时请不要附带真实聊天记录、数据库密钥、账号密码或其他敏感信息。
+
+## 许可证与来源
+
+本项目基于 [xuchengsheng/wx-dump-4j](https://github.com/xuchengsheng/wx-dump-4j) 继续开发和适配，遵循仓库中的 [LICENSE](LICENSE)。
+
+本仓库是针对微信 4.x 和 JDK 11 维护的修改版本。上游项目的作者、站点、赞助二维码和统计配置不代表本仓库。
+
+## 免责声明
+
+本项目仅供个人数据备份、技术研究和学习使用。使用者应确保对相关账号和本地数据拥有合法访问权限，并遵守当地法律法规及微信软件许可协议。
+
+严禁将本项目用于未经授权的数据访问、隐私侵犯、账号控制、数据贩卖或其他违法用途。因使用或滥用本项目造成的任何损失，由使用者自行承担。
