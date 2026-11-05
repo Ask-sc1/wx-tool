@@ -1,4 +1,6 @@
 spring:
+  thymeleaf:
+    prefix: file:./wx-dump-ui/dist/
   datasource:
     druid:
       stat-view-servlet:
