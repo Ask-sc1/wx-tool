@@ -308,7 +308,7 @@ image/           README 图片与界面截图
 
 ## 许可证与来源
 
-本项目基于 [xuchengsheng/wx-dump-4j](https://github.com/xuchengsheng/wx-dump-4j) 继续开发和适配，遵循仓库中的 [LICENSE](LICENSE)。
+本项目基于原有的 `wx-dump-4j` 开源项目继续开发和适配，遵循当前仓库中的 [LICENSE](LICENSE)。
 
 本仓库是针对微信 4.x 和 JDK 11 维护的修改版本。上游项目的作者、站点、赞助二维码和统计配置不代表本仓库。
 
