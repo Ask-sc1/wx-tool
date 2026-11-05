@@ -125,6 +125,7 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.xcs.wx.WxDumpApplication</mainClass>
+                    <classifier>exec</classifier>
                 </configuration>
                 <executions>
                     <execution>

@@ -138,7 +138,7 @@ cd ..
 ### 4. 启动完整应用
 
 ```powershell
-& "$env:JAVA_HOME\bin\java.exe" -jar wx-dump-admin/target/wx-dump-admin.jar
+& "$env:JAVA_HOME\bin\java.exe" -jar wx-dump-admin/target/wx-dump-admin-exec.jar
 ```
 
 访问 [http://localhost:8080](http://localhost:8080)。
@@ -219,7 +219,7 @@ mvn -version
 默认端口为 `8080`。如果端口已被占用，可以指定其他端口：
 
 ```powershell
-& "$env:JAVA_HOME\bin\java.exe" -jar wx-dump-admin/target/wx-dump-admin.jar --server.port=8081
+& "$env:JAVA_HOME\bin\java.exe" -jar wx-dump-admin/target/wx-dump-admin-exec.jar --server.port=8081
 ```
 
 PowerShell 中可以查看占用端口的进程：

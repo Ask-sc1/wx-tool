@@ -7,10 +7,17 @@ if defined JAVA_HOME (
     if exist "%JAVA_HOME%\bin\java.exe" set "JAVA_CMD=%JAVA_HOME%\bin\java.exe"
 )
 
-"%JAVA_CMD%" -version 2>&1 | findstr /C:"version \"11." >nul
-if errorlevel 1 (
+set "JAVA_VERSION="
+for /f "tokens=3" %%v in ('"%JAVA_CMD%" -version 2^>^&1') do (
+    set "JAVA_VERSION=%%~v"
+    goto :java_version_found
+)
+
+:java_version_found
+if not "%JAVA_VERSION:~0,3%"=="11." (
     echo.
     echo [ERROR] wx-tool requires JDK 11.
+    echo Detected Java: %JAVA_VERSION%
     echo Current JAVA_HOME: %JAVA_HOME%
     echo Install JDK 11 and set JAVA_HOME to its installation directory.
     echo.
