@@ -5,6 +5,7 @@ import com.xcs.wx.domain.Msg;
 import com.xcs.wx.domain.vo.CountRecentMsgsVO;
 import com.xcs.wx.domain.vo.MsgTypeDistributionVO;
 import com.xcs.wx.domain.vo.TopContactsVO;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -50,4 +51,40 @@ public interface MsgMapper extends BaseMapper<Msg> {
      * @return 消息数量
      */
     int countReceived();
+
+    List<String> listV4MessageTables();
+
+    List<String> listV4UserNames();
+
+    int messageTableExists(@Param("tableName") String tableName);
+
+    List<Msg> queryV4Messages(
+            @Param("tableName") String tableName,
+            @Param("talker") String talker,
+            @Param("nextSequence") Long nextSequence,
+            @Param("limit") int limit,
+            @Param("currentUser") String currentUser);
+
+    List<Msg> exportV4Messages(
+            @Param("tableName") String tableName,
+            @Param("talker") String talker,
+            @Param("currentUser") String currentUser);
+
+    List<MsgTypeDistributionVO> v4MsgTypeDistribution(@Param("tableName") String tableName);
+
+    List<CountRecentMsgsVO> v4CountRecentMsgs(
+            @Param("tableName") String tableName,
+            @Param("currentUser") String currentUser);
+
+    List<TopContactsVO> v4TopContacts(
+            @Param("tableName") String tableName,
+            @Param("talker") String talker);
+
+    int v4CountSent(
+            @Param("tableName") String tableName,
+            @Param("currentUser") String currentUser);
+
+    int v4CountReceived(
+            @Param("tableName") String tableName,
+            @Param("currentUser") String currentUser);
 }

@@ -13,13 +13,13 @@ import org.apache.ibatis.type.ByteArrayTypeHandler;
  * @date 2024年01月08日 09时45分
  **/
 @Data
-@TableName(value = "ChatRoom", autoResultMap = true)
+@TableName(value = "chat_room", autoResultMap = true)
 public class ChatRoom {
 
     /**
      * 聊天室名称，作为主键。
      */
-    @TableId("ChatRoomName")
+    @TableId("username")
     private String chatRoomName;
 
     /**
@@ -97,7 +97,7 @@ public class ChatRoom {
     /**
      * 聊天室数据，以 BLOB 形式存储。
      */
-    @TableField(value = "RoomData", typeHandler = ByteArrayTypeHandler.class)
+    @TableField(value = "ext_buffer", typeHandler = ByteArrayTypeHandler.class)
     private byte[] roomData;
 
     /**

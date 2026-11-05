@@ -13,13 +13,13 @@ import org.apache.ibatis.type.ByteArrayTypeHandler;
  * @date 2023年12月22日 10时59分
  **/
 @Data
-@TableName(value = "Contact",autoResultMap = true)
+@TableName(value = "contact", autoResultMap = true)
 public class Contact {
 
     /**
      * 用户名，作为主键。
      */
-    @TableId(value = "UserName")
+    @TableId(value = "username")
     private String userName;
 
     /**
@@ -79,13 +79,13 @@ public class Contact {
     /**
      * 备注信息。
      */
-    @TableField("Remark")
+    @TableField("remark")
     private String remark;
 
     /**
      * 昵称。
      */
-    @TableField("NickName")
+    @TableField("nick_name")
     private String nickName;
 
     /**

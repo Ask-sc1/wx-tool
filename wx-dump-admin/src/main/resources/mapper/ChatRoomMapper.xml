@@ -3,6 +3,13 @@
 
 <mapper namespace="com.xcs.wx.mapper.ChatRoomMapper">
 
+    <resultMap id="chatRoomEntityResultMap" type="com.xcs.wx.domain.ChatRoom">
+        <id property="chatRoomName" column="chatRoomName"/>
+        <result property="owner" column="owner"/>
+        <result property="roomData" column="roomData"
+                typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
+    </resultMap>
+
     <resultMap id="chatRoomResultMap" type="com.xcs.wx.domain.vo.ChatRoomVO">
         <result property="chatRoomName" column="chatRoomName" />
         <result property="isShowName" column="isShowName" />
@@ -28,30 +35,25 @@
     <!-- 查询群聊 -->
     <select id="queryChatRoom" resultMap="chatRoomResultMap" parameterType="com.xcs.wx.domain.dto.ChatRoomDTO">
         SELECT
-            cr.ChatRoomName as chatRoomName,
-            cr.IsShowName as isShowName,
-            cr.SelfDisplayName as selfDisplayName,
-            cr.RoomData as roomData,
-            c.NickName as chatRoomTitle,
-            c1.NickName as createBy,
-            chiu.smallHeadImgUrl as headImgUrl,
-            CASE WHEN cr.Reserved2 LIKE '%@openim' THEN 1 ELSE 0 END as enterprise,
-            CASE WHEN cr.Reserved2 = '' THEN 1 ELSE 0 END as dissolution
+            cr.username as chatRoomName,
+            0 as isShowName,
+            NULL as selfDisplayName,
+            cr.ext_buffer as roomData,
+            c.nick_name as chatRoomTitle,
+            NULL as createBy,
+            NULL as headImgUrl,
+            CASE WHEN cr.username LIKE '%@openim' THEN 1 ELSE 0 END as enterprise,
+            CASE WHEN c.username IS NULL THEN 1 ELSE 0 END as dissolution
         FROM
-            ChatRoom cr
-            LEFT JOIN Contact c ON cr.ChatRoomName = c.UserName
-            LEFT JOIN Contact c1 ON cr.Reserved2 = c1.UserName
-            LEFT JOIN ContactHeadImgUrl chiu ON cr.ChatRoomName = chiu.usrName
+            chat_room cr
+            LEFT JOIN contact c ON cr.username = c.username
         WHERE
-            cr.ChatRoomName != ''
+            cr.username != ''
         <if test="chatRoomDTO.chatRoomTitle != null and chatRoomDTO.chatRoomTitle != ''">
             AND c.NickName like '%' || #{chatRoomDTO.chatRoomTitle} || '%'
         </if>
         <if test="chatRoomDTO.selfDisplayName != null and chatRoomDTO.selfDisplayName != ''">
-            AND cr.SelfDisplayName like '%' || #{chatRoomDTO.selfDisplayName} || '%'
-        </if>
-        <if test="chatRoomDTO.createBy != null and chatRoomDTO.createBy != ''">
-            AND c1.NickName like '%' || #{chatRoomDTO.createBy} || '%'
+            AND 1 = 0
         </if>
     </select>
 
@@ -60,27 +62,36 @@
         SELECT
             COUNT(*)
         FROM
-            ChatRoom
+            chat_room
         WHERE
-            ChatRoomName != ''
+            username != ''
     </select>
 
     <!-- 导出群聊 -->
     <select id="exportChatRoom" resultMap="exportChatRoomResultMap">
         SELECT
-            cr.ChatRoomName as chatRoomName,
-            cr.SelfDisplayName as selfDisplayName,
-            cr.RoomData as roomData,
-            c.NickName as chatRoomTitle,
-            c1.NickName as createBy,
-            CASE WHEN cr.Reserved2 LIKE '%@openim' THEN 1 ELSE 0 END as enterprise,
-            CASE WHEN cr.Reserved2 = '' THEN 1 ELSE 0 END as dissolution
+            cr.username as chatRoomName,
+            NULL as selfDisplayName,
+            cr.ext_buffer as roomData,
+            c.nick_name as chatRoomTitle,
+            NULL as createBy,
+            CASE WHEN cr.username LIKE '%@openim' THEN 1 ELSE 0 END as enterprise,
+            CASE WHEN c.username IS NULL THEN 1 ELSE 0 END as dissolution
         FROM
-            ChatRoom cr
-            LEFT JOIN Contact c ON cr.ChatRoomName = c.UserName
-            LEFT JOIN Contact c1 ON cr.Reserved2 = c1.UserName
+            chat_room cr
+            LEFT JOIN contact c ON cr.username = c.username
         WHERE
-            cr.ChatRoomName != ''
+            cr.username != ''
+    </select>
+
+    <select id="queryChatRoomDetail" resultMap="chatRoomEntityResultMap">
+        SELECT
+            username AS chatRoomName,
+            owner AS owner,
+            ext_buffer AS roomData
+        FROM chat_room
+        WHERE username = #{chatRoomName}
+        LIMIT 1
     </select>
 
 </mapper>

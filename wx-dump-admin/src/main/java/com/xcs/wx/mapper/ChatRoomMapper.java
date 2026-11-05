@@ -40,4 +40,6 @@ public interface ChatRoomMapper extends BaseMapper<ChatRoom> {
      * @return ExportChatRoomVO
      */
     List<ExportChatRoomVO> exportChatRoom();
+
+    ChatRoom queryChatRoomDetail(@Param("chatRoomName") String chatRoomName);
 }

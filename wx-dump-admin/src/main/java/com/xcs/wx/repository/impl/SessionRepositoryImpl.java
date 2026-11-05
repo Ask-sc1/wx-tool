@@ -18,7 +18,7 @@ import java.util.List;
  * @date 2023年12月21日 17时19分
  **/
 @Repository
-@DS(value = DataSourceType.MICRO_MSG_DB)
+@DS(value = DataSourceType.SESSION_DB)
 public class SessionRepositoryImpl extends ServiceImpl<SessionMapper, Session> implements SessionRepository {
 
     @Override

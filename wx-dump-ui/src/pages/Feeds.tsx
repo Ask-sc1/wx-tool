@@ -131,15 +131,17 @@ const Feeds: React.FC = () => {
                   <Flex>
                     <Text type="secondary">{record.strCreateTime}</Text>
                   </Flex>
-                  <Link
-                    href={`http://api.map.baidu.com/geocoder?address=${encodeURIComponent(
-                      record.location.poiName,
-                    )}&output=html`}
-                    target="_blank"
-                    className="location"
-                  >
-                    {record.location.poiName}
-                  </Link>
+                  {record.location?.poiName && (
+                    <Link
+                      href={`http://api.map.baidu.com/geocoder?address=${encodeURIComponent(
+                        record.location.poiName,
+                      )}&output=html`}
+                      target="_blank"
+                      className="location"
+                    >
+                      {record.location.poiName}
+                    </Link>
+                  )}
                 </Flex>
               );
             },

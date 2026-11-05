@@ -173,4 +173,10 @@ public class Msg {
      */
     @TableField(value = "BytesTrans", typeHandler = ByteArrayTypeHandler.class)
     private byte[] bytesTrans;
+
+    @TableField(exist = false)
+    private String senderUserName;
+
+    @TableField(exist = false)
+    private byte[] rawContent;
 }

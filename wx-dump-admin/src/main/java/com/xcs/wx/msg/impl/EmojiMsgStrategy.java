@@ -25,6 +25,10 @@ public class EmojiMsgStrategy implements MsgStrategy {
 
     @Override
     public void process(MsgVO msgVO) {
+        if (msgVO.getStrContent() == null || !msgVO.getStrContent().trim().startsWith("<")) {
+            msgVO.setStrContent("[表情消息]");
+            return;
+        }
         Opt.ofNullable(msgVO.getStrContent())
                 .map(xmlContent -> XmlUtil.parseXml(xmlContent, MsgBO.class))
                 .ifPresent(msgBO -> Opt.ofNullable(msgBO.getEmoji())

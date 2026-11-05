@@ -21,7 +21,7 @@ import java.util.List;
  * @date 2023年12月21日18:38:19
  */
 @Repository
-@DS(value = DataSourceType.MICRO_MSG_DB)
+@DS(value = DataSourceType.CONTACT_DB)
 public class ChatRoomRepositoryImpl extends ServiceImpl<ChatRoomMapper, ChatRoom> implements ChatRoomRepository {
 
     @Override
@@ -31,7 +31,7 @@ public class ChatRoomRepositoryImpl extends ServiceImpl<ChatRoomMapper, ChatRoom
 
     @Override
     public ChatRoom queryChatRoomDetail(String chatRoomName) {
-        return super.getById(chatRoomName);
+        return getBaseMapper().queryChatRoomDetail(chatRoomName);
     }
 
     @Override

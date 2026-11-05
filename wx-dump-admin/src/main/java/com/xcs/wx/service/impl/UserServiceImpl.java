@@ -177,7 +177,7 @@ public class UserServiceImpl implements UserService {
      * @return 头像
      */
     private String getAvatar(String wxId) {
-        DynamicDataSourceContextHolder.push(DSNameUtil.getDSName(wxId, DataSourceType.MICRO_MSG_DB));
+        DynamicDataSourceContextHolder.push(DSNameUtil.getDSName(wxId, DataSourceType.HEAD_IMAGE_DB));
         String avatar = contactHeadImgUrlRepository.queryHeadImgUrlByUserName(wxId);
         DynamicDataSourceContextHolder.clear();
         return avatar;
@@ -190,7 +190,7 @@ public class UserServiceImpl implements UserService {
      * @return 昵称
      */
     private String getNickName(String wxId) {
-        DynamicDataSourceContextHolder.push(DSNameUtil.getDSName(wxId, DataSourceType.MICRO_MSG_DB));
+        DynamicDataSourceContextHolder.push(DSNameUtil.getDSName(wxId, DataSourceType.CONTACT_DB));
         String nickName = contactRepository.getNickName(wxId);
         DynamicDataSourceContextHolder.clear();
         return nickName;

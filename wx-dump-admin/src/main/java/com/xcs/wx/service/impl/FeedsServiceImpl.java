@@ -3,6 +3,7 @@ package com.xcs.wx.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjUtil;
+import cn.hutool.core.util.StrUtil;
 import com.xcs.wx.domain.bo.TimelineObjectBO;
 import com.xcs.wx.domain.dto.FeedsDTO;
 import com.xcs.wx.domain.vo.FeedsLocationVO;
@@ -106,6 +107,9 @@ public class FeedsServiceImpl implements FeedsService {
         List<FeedsMediaVO> feedsMediaVos = new ArrayList<>();
 
         // 获取媒体
+        if (timelineObjectBO.getContentObject() == null) {
+            return feedsMediaVos;
+        }
         List<TimelineObjectBO.ContentObject.Media> mediaList = timelineObjectBO.getContentObject().getMediaList();
 
         if (CollUtil.isEmpty(mediaList)) {
@@ -113,9 +117,13 @@ public class FeedsServiceImpl implements FeedsService {
         }
 
         for (TimelineObjectBO.ContentObject.Media media : mediaList) {
+            if (media == null || media.getUrl() == null || StrUtil.isBlank(media.getUrl().getValue())) {
+                continue;
+            }
             FeedsMediaVO feedsMediaVo = new FeedsMediaVO();
             feedsMediaVo.setUrl(media.getUrl().getValue());
-            feedsMediaVo.setThumb(media.getThumb().getValue());
+            feedsMediaVo.setThumb(media.getThumb() == null || media.getThumb().getValue() == null
+                    ? null : media.getThumb().getValue());
             feedsMediaVos.add(feedsMediaVo);
         }
         return feedsMediaVos;

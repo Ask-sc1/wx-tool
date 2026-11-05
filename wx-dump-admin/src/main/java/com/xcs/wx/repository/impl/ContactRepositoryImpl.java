@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  * @date 2023年12月22日 14时21分
  **/
 @Repository
-@DS(value = DataSourceType.MICRO_MSG_DB)
+@DS(value = DataSourceType.CONTACT_DB)
 public class ContactRepositoryImpl extends ServiceImpl<ContactMapper, Contact> implements ContactRepository {
 
     @Override

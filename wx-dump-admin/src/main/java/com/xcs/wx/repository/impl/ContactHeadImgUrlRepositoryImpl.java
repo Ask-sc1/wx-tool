@@ -1,20 +1,16 @@
 package com.xcs.wx.repository.impl;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xcs.wx.constant.DataSourceType;
-import com.xcs.wx.domain.ContactHeadImgUrl;
-import com.xcs.wx.mapper.ContactHeadImgUrlMapper;
+import com.xcs.wx.mapper.ContactHeadImgMapper;
 import com.xcs.wx.repository.ContactHeadImgUrlRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * 联系人头像 Repository 实现类
@@ -23,26 +19,32 @@ import java.util.stream.Collectors;
  * @date 2023年12月21日18:38:19
  */
 @Repository
-@DS(value = DataSourceType.MICRO_MSG_DB)
-public class ContactHeadImgUrlRepositoryImpl extends ServiceImpl<ContactHeadImgUrlMapper, ContactHeadImgUrl> implements ContactHeadImgUrlRepository {
+@RequiredArgsConstructor
+@DS(value = DataSourceType.HEAD_IMAGE_DB)
+public class ContactHeadImgUrlRepositoryImpl implements ContactHeadImgUrlRepository {
+
+    private final ContactHeadImgMapper contactHeadImgMapper;
 
     @Override
     public Map<String, String> queryHeadImgUrl(List<String> usrNames) {
-        Wrapper<ContactHeadImgUrl> wrapper = Wrappers.<ContactHeadImgUrl>lambdaQuery()
-                .select(ContactHeadImgUrl::getUsrName, ContactHeadImgUrl::getSmallHeadImgUrl)
-                .in(ContactHeadImgUrl::getUsrName, usrNames);
-        return Optional.ofNullable(super.list(wrapper))
-                .map(headImgUrls -> headImgUrls.stream().collect(Collectors.toMap(ContactHeadImgUrl::getUsrName, ContactHeadImgUrl::getSmallHeadImgUrl)))
-                .orElse(Collections.emptyMap());
+        if (usrNames == null || usrNames.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, String> result = new HashMap<>();
+        for (String userName : usrNames) {
+            String avatar = queryHeadImgUrlByUserName(userName);
+            if (avatar != null) {
+                result.put(userName, avatar);
+            }
+        }
+        return result;
     }
 
     @Override
     public String queryHeadImgUrlByUserName(String userName) {
-        Wrapper<ContactHeadImgUrl> wrapper = Wrappers.<ContactHeadImgUrl>lambdaQuery()
-                .select(ContactHeadImgUrl::getUsrName, ContactHeadImgUrl::getSmallHeadImgUrl)
-                .eq(ContactHeadImgUrl::getUsrName, userName);
-        return Optional.ofNullable(super.getOne(wrapper))
-                .map(ContactHeadImgUrl::getSmallHeadImgUrl)
-                .orElse(null);
+        com.xcs.wx.domain.ContactHeadImg avatar = contactHeadImgMapper.getContactHeadImg(userName);
+        return avatar == null || avatar.getSmallHeadBuf() == null || avatar.getSmallHeadBuf().length == 0
+                ? null
+                : "/api/contact/headImg/avatar?userName=" + userName;
     }
 }

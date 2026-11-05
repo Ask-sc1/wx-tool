@@ -2,7 +2,12 @@ chcp 65001
 @echo off
 setlocal enabledelayedexpansion
 
-java -version >nul 2>&1
+set "JAVA_CMD=java"
+if defined JAVA_HOME (
+    if exist "%JAVA_HOME%\bin\java.exe" set "JAVA_CMD=%JAVA_HOME%\bin\java.exe"
+)
+
+"%JAVA_CMD%" -version 2>&1 | findstr /C:"version \"11." >nul
 if %errorlevel% neq 0 (
     echo "未检测到 Java 环境，请先安装 Java。"
     echo "您可以访问 https://repo.huaweicloud.com/java/jdk/11.0.2+9/jdk-11.0.2_windows-x64_bin.exe 下载并安装。"
@@ -32,6 +37,6 @@ set JAVA_OPTS=%JAVA_OPTS% -XX:-OmitStackTraceInFastThrow
 
 echo 正在启动 %SERVER_NAME% ...
 
-java %JAVA_OPTS% -Dspring.thymeleaf.prefix=file:../html/ -Dlog.home=%LOG_HOME% -classpath %CLASS_PATH% com.xcs.wx.WxDumpApplication
+"%JAVA_CMD%" %JAVA_OPTS% -Dspring.thymeleaf.prefix=file:../html/ -Dlog.home=%LOG_HOME% -classpath %CLASS_PATH% com.xcs.wx.WxDumpApplication
 
 pause

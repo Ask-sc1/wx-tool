@@ -4,6 +4,7 @@
 <mapper namespace="com.xcs.wx.mapper.MsgMapper">
 
     <resultMap id="msgResultMap" type="com.xcs.wx.domain.Msg">
+        <id property="localId" column="localId" />
         <result property="talkerId" column="talkerId" />
         <result property="msgSvrId" column="msgSvrId" />
         <result property="type" column="type" />
@@ -29,6 +30,9 @@
         <result property="bytesExtra" column="bytesExtra" typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
         <result property="bytesTrans" column="bytesTrans" typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
         <result property="compressContent" column="compressContent" typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
+        <result property="senderUserName" column="senderUserName" />
+        <result property="rawContent" column="rawContent"
+                typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
     </resultMap>
 
     <!-- 微信消息类型及其分布统计 -->
@@ -124,6 +128,155 @@
             MSG
         WHERE
             DATE( CreateTime, 'unixepoch', 'localtime' ) = DATE( 'now', 'localtime' );
+    </select>
+
+    <select id="listV4MessageTables" resultType="java.lang.String">
+        SELECT name
+        FROM sqlite_master
+        WHERE type = 'table' AND name LIKE 'Msg\_%' ESCAPE '\'
+        ORDER BY name
+    </select>
+
+    <select id="listV4UserNames" resultType="java.lang.String">
+        SELECT user_name
+        FROM Name2Id
+        WHERE user_name IS NOT NULL AND user_name != ''
+    </select>
+
+    <select id="messageTableExists" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM sqlite_master
+        WHERE type = 'table' AND name = #{tableName}
+    </select>
+
+    <select id="queryV4Messages" resultMap="msgResultMap">
+        SELECT
+            m.local_id AS localId,
+            m.real_sender_id AS talkerId,
+            CAST(m.server_id AS TEXT) AS msgSvrId,
+            CAST(m.local_type &amp; 4294967295 AS INTEGER) AS type,
+            CAST(m.local_type >> 32 AS INTEGER) AS subType,
+            CASE WHEN n.user_name = #{currentUser} THEN 1 ELSE 0 END AS isSender,
+            CAST(m.create_time AS INTEGER) AS createTime,
+            m.sort_seq AS sequence,
+            m.status AS status,
+            m.server_seq AS msgServerSeq,
+            CAST(m.sort_seq AS INTEGER) AS msgSequence,
+            #{talker} AS strTalker,
+            CAST(m.message_content AS TEXT) AS strContent,
+            NULL AS displayContent,
+            0 AS reserved0,
+            0 AS reserved1,
+            0 AS reserved2,
+            0 AS reserved3,
+            NULL AS reserved4,
+            NULL AS reserved5,
+            NULL AS reserved6,
+            m.compress_content AS compressContent,
+            m.packed_info_data AS bytesExtra,
+            m.source AS bytesTrans,
+            m.message_content AS rawContent,
+            n.user_name AS senderUserName
+        FROM [${tableName}] m
+        LEFT JOIN Name2Id n ON n.rowid = m.real_sender_id
+        WHERE 1 = 1
+        <if test="nextSequence != null and nextSequence > 0">
+            AND m.sort_seq &lt; #{nextSequence}
+        </if>
+        ORDER BY m.sort_seq DESC, m.local_id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="exportV4Messages" resultMap="msgResultMap">
+        SELECT
+            m.local_id AS localId,
+            m.real_sender_id AS talkerId,
+            CAST(m.server_id AS TEXT) AS msgSvrId,
+            CAST(m.local_type &amp; 4294967295 AS INTEGER) AS type,
+            CAST(m.local_type >> 32 AS INTEGER) AS subType,
+            CASE WHEN n.user_name = #{currentUser} THEN 1 ELSE 0 END AS isSender,
+            CAST(m.create_time AS INTEGER) AS createTime,
+            m.sort_seq AS sequence,
+            m.status AS status,
+            m.server_seq AS msgServerSeq,
+            CAST(m.sort_seq AS INTEGER) AS msgSequence,
+            #{talker} AS strTalker,
+            CAST(m.message_content AS TEXT) AS strContent,
+            NULL AS displayContent,
+            0 AS reserved0,
+            0 AS reserved1,
+            0 AS reserved2,
+            0 AS reserved3,
+            NULL AS reserved4,
+            NULL AS reserved5,
+            NULL AS reserved6,
+            m.compress_content AS compressContent,
+            m.packed_info_data AS bytesExtra,
+            m.source AS bytesTrans,
+            m.message_content AS rawContent,
+            n.user_name AS senderUserName
+        FROM [${tableName}] m
+        LEFT JOIN Name2Id n ON n.rowid = m.real_sender_id
+        ORDER BY m.sort_seq, m.local_id
+    </select>
+
+    <select id="v4MsgTypeDistribution" resultType="com.xcs.wx.domain.vo.MsgTypeDistributionVO">
+        SELECT
+            CASE
+                WHEN (m.local_type &amp; 4294967295) = 1 THEN '文本'
+                WHEN (m.local_type &amp; 4294967295) = 3 THEN '图片'
+                WHEN (m.local_type &amp; 4294967295) = 34 THEN '语音'
+                WHEN (m.local_type &amp; 4294967295) = 43 THEN '视频'
+                WHEN (m.local_type &amp; 4294967295) = 47 THEN '动画表情'
+                WHEN (m.local_type &amp; 4294967295) = 49 THEN '应用消息'
+                WHEN (m.local_type &amp; 4294967295) = 10000 THEN '系统通知'
+                ELSE '其他类型'
+            END AS type,
+            COUNT(*) AS value
+        FROM [${tableName}] m
+        GROUP BY type
+    </select>
+
+    <select id="v4CountRecentMsgs" resultType="com.xcs.wx.domain.vo.CountRecentMsgsVO">
+        SELECT
+            strftime('%m-%d', m.create_time, 'unixepoch', 'localtime') AS type,
+            '发送数量' AS category,
+            SUM(CASE WHEN n.user_name = #{currentUser} THEN 1 ELSE 0 END) AS value
+        FROM [${tableName}] m
+        LEFT JOIN Name2Id n ON n.rowid = m.real_sender_id
+        WHERE DATE(m.create_time, 'unixepoch', 'localtime') >= DATE('now', '-15 days', 'localtime')
+        GROUP BY strftime('%Y-%m-%d', m.create_time, 'unixepoch', 'localtime')
+        UNION ALL
+        SELECT
+            strftime('%m-%d', m.create_time, 'unixepoch', 'localtime') AS type,
+            '接收数量' AS category,
+            SUM(CASE WHEN n.user_name = #{currentUser} THEN 0 ELSE 1 END) AS value
+        FROM [${tableName}] m
+        LEFT JOIN Name2Id n ON n.rowid = m.real_sender_id
+        WHERE DATE(m.create_time, 'unixepoch', 'localtime') >= DATE('now', '-15 days', 'localtime')
+        GROUP BY strftime('%Y-%m-%d', m.create_time, 'unixepoch', 'localtime')
+    </select>
+
+    <select id="v4TopContacts" resultType="com.xcs.wx.domain.vo.TopContactsVO">
+        SELECT
+            #{talker} AS userName,
+            COUNT(*) AS total
+        FROM [${tableName}] m
+        WHERE DATE(m.create_time, 'unixepoch', 'localtime') >= DATE('now', '-1 month', 'localtime')
+    </select>
+
+    <select id="v4CountSent" resultType="java.lang.Integer">
+        SELECT COALESCE(SUM(CASE WHEN n.user_name = #{currentUser} THEN 1 ELSE 0 END), 0)
+        FROM [${tableName}] m
+        LEFT JOIN Name2Id n ON n.rowid = m.real_sender_id
+        WHERE DATE(m.create_time, 'unixepoch', 'localtime') = DATE('now', 'localtime')
+    </select>
+
+    <select id="v4CountReceived" resultType="java.lang.Integer">
+        SELECT COALESCE(SUM(CASE WHEN n.user_name = #{currentUser} THEN 0 ELSE 1 END), 0)
+        FROM [${tableName}] m
+        LEFT JOIN Name2Id n ON n.rowid = m.real_sender_id
+        WHERE DATE(m.create_time, 'unixepoch', 'localtime') = DATE('now', 'localtime')
     </select>
 
 </mapper>

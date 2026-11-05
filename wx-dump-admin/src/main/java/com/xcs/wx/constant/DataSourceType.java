@@ -28,14 +28,14 @@ public class DataSourceType {
     public static final String CLIENT_GENERAL_DB = "ClientGeneral.db";
     public static final String CUSTOMER_SERVICE_DB = "CustomerService.db";
     public static final String EMOTION_DB = "Emotion.db";
-    public static final String FAVORITE_DB = "Favorite.db";
-    public static final String FTS_CONTACT_DB = "FTSContact.db";
-    public static final String FTS_FAVORITE_DB = "FTSFavorite.db";
+    public static final String FAVORITE_DB = "favorite.db";
+    public static final String FTS_CONTACT_DB = "contact_fts.db";
+    public static final String FTS_FAVORITE_DB = "favorite_fts.db";
     public static final String FTS_MSG_DB = "FTSMsg.db";
     public static final String FUNCTION_MSG_DB = "FunctionMsg.db";
-    public static final String HARD_LINK_FILE_DB = "HardLinkFile.db";
-    public static final String HARD_LINK_IMAGE_DB = "HardLinkImage.db";
-    public static final String HARD_LINK_VIDEO_DB = "HardLinkVideo.db";
+    public static final String HARD_LINK_FILE_DB = "hardlink.db";
+    public static final String HARD_LINK_IMAGE_DB = "hardlink.db";
+    public static final String HARD_LINK_VIDEO_DB = "hardlink.db";
     public static final String IMAGE_TRANSLATE_DB = "ImageTranslate.db";
     public static final String LINK_HISTORY_DB = "LinkHistory.db";
     public static final String MEDIA_DB = "Media.db";
@@ -50,11 +50,15 @@ public class DataSourceType {
     public static final String PRE_DOWNLOAD_DB = "PreDownload.db";
     public static final String PUBLIC_MSG_DB = "PublicMsg.db";
     public static final String PUBLIC_MSG_MEDIA_DB = "PublicMsgMedia.db";
-    public static final String SNS_DB = "Sns.db";
+    public static final String SNS_DB = "sns.db";
     public static final String STORE_EMOTION_DB = "StoreEmotion.db";
     public static final String VOIP_DB = "Voip.db";
     public static final String MSG_DB = "MSG.db";
     public static final String MSG0_DB = "MSG0.db";
+    public static final String CONTACT_DB = "contact.db";
+    public static final String CONTACT_FTS_DB = "contact_fts.db";
+    public static final String SESSION_DB = "session.db";
+    public static final String HEAD_IMAGE_DB = "head_image.db";
 
     /**
      * 读取MSG*.db
@@ -67,7 +71,18 @@ public class DataSourceType {
         if (wxId == null) {
             return Collections.emptyList();
         }
-        return getDb(wxId + "#" + "MSG.*\\.db");
+        return getDb(wxId + "#(?:MSG.*\\.db|message_\\d+\\.db)");
+    }
+
+    /**
+     * 获取微信 4.x 的 message_*.db 数据源。
+     */
+    public static List<String> getV4MessageDb() {
+        String wxId = SpringUtil.getBean(UserService.class).currentUser();
+        if (wxId == null) {
+            return Collections.emptyList();
+        }
+        return getDb(wxId + "#message_\\d+\\.db");
     }
 
     /**

@@ -3,6 +3,7 @@ package com.xcs.wx.service.impl;
 import cn.hutool.core.lang.Opt;
 import cn.hutool.core.util.StrUtil;
 import com.xcs.wx.domain.vo.SessionVO;
+import com.xcs.wx.repository.ContactRepository;
 import com.xcs.wx.repository.SessionRepository;
 import com.xcs.wx.service.SessionService;
 import com.xcs.wx.util.DateFormatUtil;
@@ -23,6 +24,7 @@ import java.util.List;
 public class SessionServiceImpl implements SessionService {
 
     private final SessionRepository sessionRepository;
+    private final ContactRepository contactRepository;
 
     @Override
     public List<SessionVO> querySession() {
@@ -31,6 +33,10 @@ public class SessionServiceImpl implements SessionService {
                 // 处理头像为空问题
                 .map(sessions -> {
                     for (SessionVO session : sessions) {
+                        String nickName = contactRepository.getNickName(session.getUserName());
+                        if (!StrUtil.isBlank(nickName)) {
+                            session.setNickName(nickName);
+                        }
                         // 如果有头像则不处理
                         if (!StrUtil.isBlank(session.getHeadImgUrl())) {
                             continue;

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
  * @date 2024年6月18日15:31:54
  */
 @Repository
-@DS(value = DataSourceType.MISC_DB)
+@DS(value = DataSourceType.HEAD_IMAGE_DB)
 public class ContactHeadImgRepositoryImpl extends ServiceImpl<ContactHeadImgMapper, ContactHeadImg> implements ContactHeadImgRepository {
 
     @Override

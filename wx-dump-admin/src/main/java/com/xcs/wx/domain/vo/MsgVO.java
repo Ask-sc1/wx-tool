@@ -118,4 +118,13 @@ public class MsgVO {
      * 聊天人Id
      */
     private String wxId;
+
+    /**
+     * 微信 4.x 消息表通过 real_sender_id 关联出的发送者 wxid。
+     */
+    @JsonIgnore
+    private String senderUserName;
+
+    @JsonIgnore
+    private byte[] rawContent;
 }

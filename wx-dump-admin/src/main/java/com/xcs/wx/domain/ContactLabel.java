@@ -12,19 +12,19 @@ import lombok.Data;
  * @date 2023年12月22日 16时53分
  **/
 @Data
-@TableName("ContactLabel")
+@TableName("contact_label")
 public class ContactLabel {
 
     /**
      * 标签Id
      */
-    @TableId("LabelId")
+    @TableId("label_id_")
     private String labelId;
 
     /**
      * 标签名称
      */
-    @TableField("LabelName")
+    @TableField("label_name_")
     private String labelName;
 
     /**

@@ -15,11 +15,11 @@ import org.springframework.stereotype.Repository;
  * @date 2023年12月21日18:38:19
  */
 @Repository
-@DS(value = DataSourceType.MICRO_MSG_DB)
+@DS(value = DataSourceType.CONTACT_DB)
 public class ChatRoomInfoRepositoryImpl extends ServiceImpl<ChatRoomInfoMapper, ChatRoomInfo> implements ChatRoomInfoRepository {
 
     @Override
     public ChatRoomInfo queryChatRoomInfo(String chatRoomName) {
-        return super.getById(chatRoomName);
+        return getBaseMapper().queryChatRoomInfoDetail(chatRoomName);
     }
 }

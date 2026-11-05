@@ -13,6 +13,7 @@ import com.xcs.wx.domain.vo.WeChatConfigVO;
 import com.xcs.wx.exception.BizException;
 import com.xcs.wx.service.WeChatService;
 import com.xcs.wx.util.Pbkdf2HmacUtil;
+import com.xcs.wx.util.WeChatV4Support;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -25,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -42,11 +44,16 @@ public class WeChatServiceImpl implements WeChatService {
     /**
      * 微信进程
      */
-    private static final String EXE_NAME = "WeChat.exe";
+    private static final Set<String> EXE_NAMES = new HashSet<>(Arrays.asList(
+            "WeChat.exe", "Weixin.exe"
+    ));
 
     /**
      * 微信程序dll文件
      */
+    private static final Set<String> MODULE_NAMES = new HashSet<>(Arrays.asList(
+            "WeChatWin.dll", "Weixin.dll"
+    ));
     private static final String MODULE_NAME = "WeChatWin.dll";
 
     /**
@@ -92,6 +99,25 @@ public class WeChatServiceImpl implements WeChatService {
         for (Integer pid : pidList) {
             // 获取版本号
             String version = getVersion(pid);
+            if (WeChatV4Support.isVersion4(version)) {
+                try {
+                    Path accountDir = WeChatV4Support.findAccountDirectory();
+                    String wxId = WeChatV4Support.findLoggedInAccountId(pid, accountDir);
+                    weChatConfigVOList.add(new WeChatConfigVO(
+                            pid,
+                            baseAddress(pid),
+                            version,
+                            "",
+                            "",
+                            "",
+                            accountDir.toString(),
+                            wxId
+                    ));
+                } catch (IOException e) {
+                    throw new BizException(-1, "未找到微信 4.x 数据目录: " + e.getMessage());
+                }
+                continue;
+            }
             // 支持最小的版本号
             String supportMinVersion = weChatOffsetConfig.getVersion().keySet().stream().findFirst().orElse("0.0.0.0");
             // 校验版本号
@@ -181,9 +207,12 @@ public class WeChatServiceImpl implements WeChatService {
                 // 获取进程名
                 String exeName = Native.toString(pe32.szExeFile);
                 // 检查进程名是否为目标进程名
-                if (exeName.equalsIgnoreCase(EXE_NAME)) {
+                if (EXE_NAMES.stream().anyMatch(name -> name.equalsIgnoreCase(exeName))) {
                     // 返回找到的进程ID
-                    pidList.add(pe32.th32ProcessID.intValue());
+                    int pid = pe32.th32ProcessID.intValue();
+                    if (baseAddress(pid) > 0) {
+                        pidList.add(pid);
+                    }
                 }
                 // 继续遍历下一个进程
             } while (kernel32.Process32Next(hSnapshot, pe32));
@@ -218,7 +247,7 @@ public class WeChatServiceImpl implements WeChatService {
                     // 从模块入口结构中读取模块名
                     String moduleName = Native.toString(me32.szModule);
                     // 检查是否为微信 DLL
-                    if (MODULE_NAME.equalsIgnoreCase(moduleName)) {
+                    if (MODULE_NAMES.stream().anyMatch(name -> name.equalsIgnoreCase(moduleName))) {
                         // 返回微信 DLL 的基地址
                         kernel32.CloseHandle(hModuleSnapshot);
                         return Pointer.nativeValue(me32.modBaseAddr);

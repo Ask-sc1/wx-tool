@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.xcs.wx.mapper.FeedsMapper">
+    <select id="queryV4Feeds" resultType="com.xcs.wx.domain.Feeds">
+        SELECT
+            tid AS feedId,
+            user_name AS userName,
+            content AS content
+        FROM SnsTimeLine
+        <where>
+            <if test="userName != null and userName != ''">
+                user_name = #{userName}
+            </if>
+        </where>
+        ORDER BY tid DESC
+    </select>
+</mapper>

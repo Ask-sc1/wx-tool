@@ -6,24 +6,17 @@
     <!-- 查询会话 -->
     <select id="querySession" resultType="com.xcs.wx.domain.vo.SessionVO">
         SELECT
-            s.strUsrName AS userName,
-            s.nTime AS time,
-            s.strContent AS content,
-            chiu.smallHeadImgUrl AS headImgUrl,
-            CASE
-                WHEN c.Remark IS NULL OR c.Remark = '' THEN
-                        CASE WHEN c.NickName IS NULL OR c.NickName = '' THEN s.strNickName  ELSE c.NickName
-                END ELSE c.Remark
-            END AS nickName
+            s.username AS userName,
+            s.last_timestamp AS time,
+            CAST(s.summary AS TEXT) AS content,
+            NULL AS headImgUrl,
+            COALESCE(NULLIF(s.last_sender_display_name, ''), s.username) AS nickName
         FROM
-            Session s
-            LEFT JOIN ContactHeadImgUrl chiu ON s.strUsrName = chiu.usrName
-            LEFT JOIN Contact c ON c.UserName = s.strUsrName
+            SessionTable s
         WHERE
-            strUsrName NOT LIKE '%gh_%'
-            AND nOrder > 1
-            AND nMsgLocalID > 0
+            s.last_timestamp > 0
+            AND s.is_hidden = 0
         ORDER BY
-            nTime DESC
+            s.last_timestamp DESC
     </select>
 </mapper>

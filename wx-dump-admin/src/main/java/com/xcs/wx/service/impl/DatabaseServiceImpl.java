@@ -20,6 +20,7 @@ import com.xcs.wx.service.UserService;
 import com.xcs.wx.service.WeChatService;
 import com.xcs.wx.util.DSNameUtil;
 import com.xcs.wx.util.DirUtil;
+import com.xcs.wx.util.WeChatV4Support;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -35,8 +36,16 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,6 +66,10 @@ public class DatabaseServiceImpl implements DatabaseService, ApplicationRunner {
 
     @Override
     public void decrypt(SseEmitter emitter, DecryptDTO decryptDTO) {
+        if (WeChatV4Support.isVersion4(decryptDTO.getVersion())) {
+            decryptWeChatV4(emitter, decryptDTO);
+            return;
+        }
         // 文件分隔符
         String separator = FileSystems.getDefault().getSeparator();
         // 微信目录
@@ -119,6 +132,80 @@ public class DatabaseServiceImpl implements DatabaseService, ApplicationRunner {
         } finally {
             emitter.complete();
         }
+    }
+
+    private void decryptWeChatV4(SseEmitter emitter, DecryptDTO decryptDTO) {
+        try {
+            Path dbStorage = Paths.get(decryptDTO.getBasePath(), "db_storage");
+            Map<Path, byte[]> databaseKeys = WeChatV4Support.extractDatabaseKeys(
+                    decryptDTO.getPid(), dbStorage);
+            List<Map.Entry<Path, byte[]>> databases = new ArrayList<>(databaseKeys.entrySet());
+            databases.sort(Comparator.comparingLong(entry -> {
+                try {
+                    return Files.size(entry.getKey());
+                } catch (IOException ignored) {
+                    return Long.MAX_VALUE;
+                }
+            }));
+
+            Path outputDir = Paths.get(DirUtil.getDbDir(decryptDTO.getWxId()));
+            Files.createDirectories(outputDir);
+            int index = 0;
+            for (Map.Entry<Path, byte[]> database : databases) {
+                Path source = database.getKey();
+                Path target = outputDir.resolve(source.getFileName().toString());
+                DecryptVO decryptVO = DecryptVO.builder()
+                        .fileName(source.getFileName().toString())
+                        .fileSize(FileUtil.readableFileSize(Files.size(source)))
+                        .total(databases.size())
+                        .currentProgress(((++index) * 100) / databases.size())
+                        .build();
+                emitter.send(ResponseVO.ok(decryptVO), MediaType.APPLICATION_JSON);
+                WeChatV4Support.decryptDatabase(source, target, database.getValue());
+                registerDataSource(target.toString());
+            }
+
+            String[] profile = readV4Profile(outputDir.resolve("contact.db"), decryptDTO.getWxId());
+            userService.saveUser(UserBO.builder()
+                    .basePath(decryptDTO.getBasePath())
+                    .account(profile[0])
+                    .mobile("")
+                    .version(decryptDTO.getVersion())
+                    .nickname(profile[1])
+                    .wxId(decryptDTO.getWxId())
+                    .build());
+        } catch (Exception e) {
+            log.error("WeChat 4.x database decryption failed", e);
+            try {
+                emitter.send(ResponseVO.error(-1, "微信 4.x 数据库解密失败: " + e.getMessage()),
+                        MediaType.APPLICATION_JSON);
+            } catch (IOException ignored) {
+            }
+        } finally {
+            emitter.complete();
+        }
+    }
+
+    private String[] readV4Profile(Path contactDatabase, String wxId) {
+        String[] profile = new String[]{"", wxId};
+        if (!Files.isRegularFile(contactDatabase)) {
+            return profile;
+        }
+        String url = SqliteConstant.URL_PREFIX + contactDatabase;
+        try (Connection connection = DriverManager.getConnection(url);
+             var statement = connection.prepareStatement(
+                     "SELECT alias, nick_name FROM contact WHERE username = ? LIMIT 1")) {
+            statement.setString(1, wxId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    profile[0] = resultSet.getString("alias");
+                    profile[1] = resultSet.getString("nick_name");
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Unable to read the WeChat 4.x account profile", e);
+        }
+        return profile;
     }
 
     @Override

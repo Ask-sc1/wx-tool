@@ -2,6 +2,7 @@ package com.xcs.wx.service.impl;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.excel.EasyExcel;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -114,6 +115,9 @@ public class MsgServiceImpl implements MsgService {
         try {
             // 群聊
             if (talker.endsWith(ChatRoomConstant.CHATROOM_SUFFIX)) {
+                if (StrUtil.isNotBlank(msgVO.getSenderUserName())) {
+                    return msgVO.getSenderUserName();
+                }
                 MsgProto.MessageBytesExtra messageBytesExtra = MsgProto.MessageBytesExtra.parseFrom(msgVO.getBytesExtra());
                 List<MsgProto.SubMessage2> message2List = messageBytesExtra.getMessage2List();
                 for (MsgProto.SubMessage2 subMessage2 : message2List) {

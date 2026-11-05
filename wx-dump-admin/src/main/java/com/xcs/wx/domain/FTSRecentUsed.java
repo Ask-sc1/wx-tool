@@ -12,24 +12,24 @@ import lombok.Data;
  * @date 2024年01月23日 11时09分
  **/
 @Data
-@TableName("FTSRecentUsed15")
+@TableName("search_dict_v1")
 public class FTSRecentUsed {
 
     /**
      * 查询的内容
      */
-    @TableId("queryText")
+    @TableId("content")
     private String queryText;
 
     /**
      * 用户名
      */
-    @TableField("username")
+    @TableField("click_type")
     private Integer username;
 
     /**
      * 修改时间
      */
-    @TableField("updateTime")
+    @TableField("update_time")
     private String updateTime;
 }

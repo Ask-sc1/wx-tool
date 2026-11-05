@@ -14,6 +14,23 @@
 	<a href="https://hellogithub.com/repository/5055dcceee434dc5851ac9897cb27396" target="_blank"><img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=5055dcceee434dc5851ac9897cb27396&claim_uid=AVv4KeNnZs2Ig3a" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 </p>
 
+## 微信 4.x / JDK 11 兼容版本
+
+- 已适配 Windows 微信 `4.1.15.56`（`Weixin.exe` / `Weixin.dll` / `xwechat_files`）。
+- 支持微信 4.1.11+ 的 WCDB `Config.Cipher` XOR 掩码密钥提取，所有候选密钥都会通过 SQLCipher 4 page-1 HMAC 校验。
+- 解密流程仅读取微信原始文件，结果写入项目的 `data/db/<wxid>/`，不会修改微信数据库。
+- 支持 SQLCipher 4 页面解密及 `-wal` 增量补丁，并已切换联系人、会话、群聊、消息和朋友圈的 4.x 表结构。
+- 后端固定使用 JDK 11：推荐的最近补丁版本为 Microsoft OpenJDK `11.0.30`。Maven 构建使用 Spring Boot `2.7.18`（Spring Boot 3.x 要求 Java 17，不适用于本项目）。
+
+PowerShell 中可这样设置当前终端环境：
+
+```powershell
+$env:JAVA_HOME = "C:\Users\<用户名>\.jdks\ms-11.0.30"
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+java -version
+mvn clean package
+```
+
 <p align="center">
 	<a href="https://github.com/xuchengsheng/spring-reading/stargazers"><img src="https://img.shields.io/github/stars/xuchengsheng/wx-dump-4j?logo=github&logoColor=%23EF2D5E&label=Stars&labelColor=%23000000&color=%23EF2D5E&cacheSeconds=3600" alt="Stars Badge"/></a>
     <a href="https://github.com/xuchengsheng"><img src="https://img.shields.io/github/followers/xuchengsheng?label=Followers&logo=github&logoColor=%23FC521F&labelColor=%231A2477&color=%23FC521F&cacheSeconds=3600" alt="Follow Badge"></a>

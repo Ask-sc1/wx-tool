@@ -13,30 +13,30 @@ import org.apache.ibatis.type.ByteArrayTypeHandler;
  * @date 2023年12月22日 10时59分
  **/
 @Data
-@TableName("ContactHeadImg1")
+@TableName("head_image")
 public class ContactHeadImg {
 
     /**
      * 用户名，主键
      */
-    @TableId("usrName")
+    @TableId("username")
     private String usrName;
 
     /**
      * 创建时间
      */
-    @TableField("createTime")
+    @TableField("update_time")
     private Integer createTime;
 
     /**
      * 小头像数据
      */
-    @TableField(value = "smallHeadBuf", typeHandler = ByteArrayTypeHandler.class)
+    @TableField(value = "image_buffer", typeHandler = ByteArrayTypeHandler.class)
     private byte[] smallHeadBuf;
 
     /**
      * 头像MD5值
      */
-    @TableField("m_headImgMD5")
+    @TableField("md5")
     private String headImgMd5;
 }
