@@ -14,6 +14,8 @@ spring:
         min-idle: 3
         max-wait: 1000
         test-while-idle: false
+server:
+  port: 18080
 wechat-offset:
   version:
     "[3.9.8.25]":

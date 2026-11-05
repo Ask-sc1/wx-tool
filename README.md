@@ -141,13 +141,13 @@ cd ..
 & "$env:JAVA_HOME\bin\java.exe" -jar wx-dump-admin/target/wx-dump-admin-exec.jar
 ```
 
-访问 [http://localhost:8080](http://localhost:8080)。
+访问 [http://localhost:18080](http://localhost:18080)。
 
 必须在项目根目录执行上述命令。源码模式默认从 `wx-dump-ui/dist` 读取前端页面；如果没有先执行 `npm run build`，首页会返回 500。
 
 ### 前端开发模式
 
-后端运行在 `8080` 端口时，可以单独启动前端开发服务器：
+后端运行在 `18080` 端口时，可以单独启动前端开发服务器：
 
 ```powershell
 cd wx-dump-ui
@@ -176,7 +176,7 @@ wx-dump-dist/target/wx-dump-4j-bin.tar.gz
 
 1. 打开并登录 Windows 桌面微信。
 2. 保持微信处于登录状态。
-3. 启动 `wx-tool` 并访问 [http://localhost:8080](http://localhost:8080)。
+3. 启动 `wx-tool` 并访问 [http://localhost:18080](http://localhost:18080)。
 4. 进入“解密工具”页面。
 5. 点击“解密”，等待数据库处理完成。
 6. 刷新页面，进入会话、联系人、群聊、消息或朋友圈页面。
@@ -216,16 +216,16 @@ mvn -version
 
 ### 端口被占用
 
-默认端口为 `8080`。如果端口已被占用，可以指定其他端口：
+默认端口为 `18080`。如果端口已被占用，可以指定其他端口：
 
 ```powershell
-& "$env:JAVA_HOME\bin\java.exe" -jar wx-dump-admin/target/wx-dump-admin-exec.jar --server.port=8081
+& "$env:JAVA_HOME\bin\java.exe" -jar wx-dump-admin/target/wx-dump-admin-exec.jar --server.port=18081
 ```
 
 PowerShell 中可以查看占用端口的进程：
 
 ```powershell
-Get-NetTCPConnection -LocalPort 8080 -State Listen
+Get-NetTCPConnection -LocalPort 18080 -State Listen
 Get-CimInstance Win32_Process -Filter "ProcessId=<进程ID>" |
   Select-Object ProcessId,CommandLine
 ```

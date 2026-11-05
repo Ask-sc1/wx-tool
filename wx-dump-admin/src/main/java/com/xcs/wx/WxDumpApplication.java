@@ -24,7 +24,7 @@ public class WxDumpApplication {
         ConfigurableApplicationContext context = SpringApplication.run(WxDumpApplication.class, args);
         long endTime = System.currentTimeMillis();
 
-        String port = context.getEnvironment().getProperty("server.port", "8080");
+        String port = context.getEnvironment().getProperty("server.port", "18080");
         String contextPath = context.getEnvironment().getProperty("server.servlet.context-path", "");
         String localHostAddress = InetAddress.getLocalHost().getHostAddress();
 
